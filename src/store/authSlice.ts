@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { call, put, takeLatest } from "redux-saga/effects";
-import { api, errMsg, USER_KEY } from "@/lib/api";
+import { api, errMsg, USER_KEY, initializeCsrf } from "@/lib/api";
 
 export interface User {
   id: number;
@@ -56,10 +56,9 @@ export default slice.reducer;
 
 function* loginSaga(action: ReturnType<typeof loginRequest>) {
   try {
-    // Önce CSRF cookie'sinin backend tarafından oluşturulmasını sağla.
-    yield call(api.get, "/auth/csrf");
+    // CSRF token'ını backend'den al ve Axios isteklerine tanıt.
+    yield call(initializeCsrf);
 
-    // Axios, XSRF-TOKEN cookie değerini X-XSRF-TOKEN başlığına ekler.
     const res: { data: User } = yield call(
       api.post,
       "/auth/login",
@@ -73,7 +72,6 @@ function* loginSaga(action: ReturnType<typeof loginRequest>) {
       throw new Error("Bu panele yalnızca platform yöneticileri girebilir");
     }
 
-    // JWT localStorage'a yazılmaz; HttpOnly cookie backend tarafından yönetilir.
     localStorage.setItem(USER_KEY, JSON.stringify(user));
 
     yield put(loginSuccess(user));
@@ -84,7 +82,6 @@ function* loginSaga(action: ReturnType<typeof loginRequest>) {
 
 function* logoutSaga() {
   try {
-    // Backend'deki HttpOnly oturum cookie'sini temizle.
     yield call(api.post, "/auth/logout");
   } catch {
     // Sunucuya ulaşılamasa bile yerel oturum temizlenecek.
