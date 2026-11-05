@@ -3,11 +3,20 @@ import { call, put, takeEvery, takeLatest } from "redux-saga/effects";
 import { api, errMsg } from "@/lib/api";
 
 export type LicenseStatus = "TRIAL" | "ACTIVE" | "SUSPENDED" | "EXPIRED";
+
+export interface DomainDto {
+  id: number;
+  host: string;
+  verified: boolean;
+  verifiedAt: string | null;
+}
+
 export interface Tenant {
   id: number;
   slug: string;
   name: string;
   domains: string[];
+  domainDetails: DomainDto[];
   plan: string | null;
   status: LicenseStatus | null;
   startsAt: string | null;
@@ -15,7 +24,9 @@ export interface Tenant {
   maxProducts: number | null;
   maxUsers: number | null;
 }
+
 export type SaveKind = "create" | "license" | "domain" | "user";
+
 interface State {
   items: Tenant[];
   loading: boolean;
@@ -27,7 +38,12 @@ interface State {
 
 const slice = createSlice({
   name: "tenants",
-  initialState: { items: [], loading: false, saving: false, saved: 0 } as State,
+  initialState: {
+    items: [],
+    loading: false,
+    saving: false,
+    saved: 0,
+  } as State,
   reducers: {
     fetchTenants: (s) => {
       s.loading = true;
@@ -65,6 +81,7 @@ const slice = createSlice({
     },
   },
 });
+
 export const {
   fetchTenants,
   fetchTenantsSuccess,
@@ -74,6 +91,7 @@ export const {
   saveFailure,
   clearSaveError,
 } = slice.actions;
+
 export default slice.reducer;
 
 function* fetchSaga() {
@@ -87,12 +105,14 @@ function* fetchSaga() {
 
 function* saveSaga(a: ReturnType<typeof saveRequest>) {
   const { kind, id, body } = a.payload;
+
   const req = {
     create: { method: "post", url: "/platform/tenants" },
     license: { method: "put", url: `/platform/tenants/${id}/license` },
     domain: { method: "post", url: `/platform/tenants/${id}/domains` },
     user: { method: "post", url: `/platform/tenants/${id}/users` },
   }[kind];
+
   try {
     yield call(api.request, { ...req, data: body });
     yield put(saveSuccess());

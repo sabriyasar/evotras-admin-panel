@@ -25,6 +25,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   clearSaveError,
   fetchTenants,
+  DomainDto,
   LicenseStatus,
   Tenant,
 } from "@/store/tenantsSlice";
@@ -34,6 +35,7 @@ import {
   LicenseModal,
   STATUS_LABEL,
   UserModal,
+  DomainVerificationModal,
 } from "@/components/Modals";
 
 const COLOR: Record<LicenseStatus, string> = {
@@ -43,10 +45,11 @@ const COLOR: Record<LicenseStatus, string> = {
   EXPIRED: "red",
 };
 
-type ModalState = {
-  kind: "create" | "license" | "domain" | "user";
-  tenant?: Tenant;
-} | null;
+type ModalState =
+  | { kind: "create" }
+  | { kind: "license" | "domain" | "user"; tenant: Tenant }
+  | { kind: "verification"; tenant: Tenant; domain: DomainDto }
+  | null;
 
 export default function TenantsPage() {
   const dispatch = useAppDispatch();
@@ -98,14 +101,52 @@ export default function TenantsPage() {
     },
     {
       title: "Adresler",
-      render: (_, t) =>
-        (t.domains ?? []).map((domain) => (
-          <div key={domain}>
-            <a href={`https://${domain}`} target="_blank" rel="noreferrer">
-              {domain}
-            </a>
-          </div>
-        )),
+      render: (_, t) => (
+        <Space direction="vertical" size={8}>
+          {(t.domainDetails ?? []).length > 0 ? (
+            t.domainDetails.map((domain) => (
+              <Space key={domain.id} size={8} wrap>
+                <a
+                  href={`https://${domain.host}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {domain.host}
+                </a>
+
+                <Tag color={domain.verified ? "success" : "warning"}>
+                  {domain.verified ? "Doğrulandı" : "Doğrulanmadı"}
+                </Tag>
+
+                <Button
+                  size="small"
+                  onClick={() =>
+                    open({
+                      kind: "verification",
+                      tenant: t,
+                      domain,
+                    })
+                  }
+                >
+                  DNS Doğrula
+                </Button>
+              </Space>
+            ))
+          ) : (
+            (t.domains ?? []).map((domain) => (
+              <div key={domain}>
+                <a
+                  href={`https://${domain}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {domain}
+                </a>
+              </div>
+            ))
+          )}
+        </Space>
+      ),
     },
     {
       title: "Plan",
@@ -243,6 +284,14 @@ export default function TenantsPage() {
 
       {modal?.kind === "user" && modal.tenant && (
         <UserModal tenant={modal.tenant} onClose={() => setModal(null)} />
+      )}
+
+      {modal?.kind === "verification" && (
+        <DomainVerificationModal
+          tenant={modal.tenant}
+          domain={modal.domain}
+          onClose={() => setModal(null)}
+        />
       )}
     </>
   );

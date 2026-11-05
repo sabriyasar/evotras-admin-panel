@@ -3,7 +3,8 @@ import axios from "axios";
 export const USER_KEY = "platform_user";
 
 export const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api",
+  // Tüm istekler Next.js proxy üzerinden geçer.
+  baseURL: "/api",
   timeout: 15000,
   withCredentials: true,
   withXSRFToken: true,
@@ -12,7 +13,6 @@ export const api = axios.create({
 });
 
 // CSRF token'ı bellekte tutuyoruz.
-// Çünkü production frontend ve backend farklı origin'lerde.
 let csrfToken: string | null = null;
 
 // Backend'den CSRF token'ını al.
