@@ -4,7 +4,11 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button, Layout, Spin } from "antd";
-import { LogoutOutlined, ShopOutlined, AppstoreOutlined } from "@ant-design/icons";
+import {
+  LogoutOutlined,
+  ShopOutlined,
+  AppstoreOutlined,
+} from "@ant-design/icons";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { hydrate, logout } from "@/store/authSlice";
 import { USER_KEY } from "@/lib/api";
@@ -30,7 +34,12 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     if (user && path === "/login") router.replace("/");
   }, [ready, user, path, router]);
 
-  if (!ready) return <div className="center"><Spin size="large" /></div>;
+  if (!ready)
+    return (
+      <div className="center">
+        <Spin size="large" />
+      </div>
+    );
   if (path === "/login") return <>{children}</>;
   if (!user) return null;
 
@@ -45,14 +54,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <Link href="/" className={path === "/" ? "active" : ""}>
             <ShopOutlined /> Mağazalar
           </Link>
-          <Link href="/products" className={path.startsWith("/products") ? "active" : ""}>
-            <AppstoreOutlined /> Ürünler
-          </Link>
         </div>
 
         <div className="who">
           {user.email}
-          <Button size="small" icon={<LogoutOutlined />} onClick={() => dispatch(logout())}>
+          <Button
+            size="small"
+            icon={<LogoutOutlined />}
+            onClick={() => dispatch(logout())}
+          >
             Çıkış
           </Button>
         </div>
