@@ -8,6 +8,7 @@ import {
   Card,
   Empty,
   Input,
+  Modal,
   Popover,
   Segmented,
   Space,
@@ -30,7 +31,9 @@ import dayjs from "dayjs";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   clearSaveError,
+  clearPrimaryError,
   fetchTenants,
+  makeDomainPrimary,
   DomainDto,
   LicenseStatus,
   Tenant,
@@ -93,10 +96,21 @@ function remainingLabel(expiresAt: string | null | undefined) {
 
 export default function TenantsPage() {
   const dispatch = useAppDispatch();
-  const { items, loading, error, saved } = useAppSelector((s) => s.tenants);
+
+  const {
+    items,
+    loading,
+    error,
+    saved,
+    primarySaving,
+    primarySaved,
+    primaryError,
+  } = useAppSelector((s) => s.tenants);
+
   const [modal, setModal] = useState<ModalState>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
+
   const [msg, ctx] = message.useMessage();
   const { token } = theme.useToken();
 
@@ -110,6 +124,19 @@ export default function TenantsPage() {
       msg.success("Kaydedildi");
     }
   }, [saved, msg]);
+
+  useEffect(() => {
+    if (primarySaved > 0) {
+      msg.success("Birincil domain başarıyla güncellendi.");
+    }
+  }, [primarySaved, msg]);
+
+  useEffect(() => {
+    if (primaryError) {
+      msg.error(primaryError);
+      dispatch(clearPrimaryError());
+    }
+  }, [primaryError, dispatch, msg]);
 
   const open = (m: ModalState) => {
     dispatch(clearSaveError());
@@ -169,6 +196,7 @@ export default function TenantsPage() {
           <Tag color="warning" style={{ marginInlineEnd: 0 }}>
             Doğrulanmadı
           </Tag>
+
           <Button
             size="small"
             type="link"
@@ -178,6 +206,41 @@ export default function TenantsPage() {
             DNS doğrula
           </Button>
         </>
+      )}
+
+      {domain.primary ? (
+        <Tag color="blue" style={{ marginInlineEnd: 0 }}>
+          Birincil
+        </Tag>
+      ) : (
+        domain.verified && (
+          <Button
+            size="small"
+            type="link"
+            disabled={primarySaving}
+            loading={primarySaving}
+            style={{ padding: 0 }}
+            onClick={() => {
+              Modal.confirm({
+                title: "Birincil domain değiştirilsin mi?",
+                content: `Diğer adresler artık ${domain.host} adresine yönlenecek. Bu domain birincil adres olarak ayarlansın mı?`,
+                okText: "Birincil yap",
+                cancelText: "Vazgeç",
+                centered: true,
+                onOk: () => {
+                  dispatch(
+                    makeDomainPrimary({
+                      tenantId: t.id,
+                      domainId: domain.id,
+                    }),
+                  );
+                },
+              });
+            }}
+          >
+            Birincil yap
+          </Button>
+        )
       )}
     </Space>
   );

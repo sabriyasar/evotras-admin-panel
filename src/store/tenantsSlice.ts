@@ -9,6 +9,7 @@ export interface DomainDto {
   host: string;
   verified: boolean;
   verifiedAt: string | null;
+  primary: boolean;
 }
 
 export interface Tenant {
@@ -34,12 +35,17 @@ interface State {
   saved: number;
   error?: string;
   saveError?: string;
+  primarySaving: boolean;
+  primarySaved: number;
+  primaryError?: string;
 }
 
 const slice = createSlice({
   name: "tenants",
   initialState: {
     items: [],
+    primarySaving: false,
+    primarySaved: 0,
     loading: false,
     saving: false,
     saved: 0,
@@ -79,6 +85,27 @@ const slice = createSlice({
     clearSaveError: (s) => {
       s.saveError = undefined;
     },
+    makeDomainPrimary: (
+      s,
+      _a: PayloadAction<{ tenantId: number; domainId: number }>,
+    ) => {
+      s.primarySaving = true;
+      s.primaryError = undefined;
+    },
+
+    makeDomainPrimarySuccess: (s) => {
+      s.primarySaving = false;
+      s.primarySaved += 1;
+    },
+
+    makeDomainPrimaryFailure: (s, a: PayloadAction<string>) => {
+      s.primarySaving = false;
+      s.primaryError = a.payload;
+    },
+
+    clearPrimaryError: (s) => {
+      s.primaryError = undefined;
+    },
   },
 });
 
@@ -90,6 +117,10 @@ export const {
   saveSuccess,
   saveFailure,
   clearSaveError,
+  makeDomainPrimary,
+  makeDomainPrimarySuccess,
+  makeDomainPrimaryFailure,
+  clearPrimaryError,
 } = slice.actions;
 
 export default slice.reducer;
@@ -121,8 +152,24 @@ function* saveSaga(a: ReturnType<typeof saveRequest>) {
     yield put(saveFailure(errMsg(e)));
   }
 }
+function* makeDomainPrimarySaga(a: ReturnType<typeof makeDomainPrimary>) {
+  const { tenantId, domainId } = a.payload;
+
+  try {
+    yield call(
+      api.post,
+      `/platform/tenants/${tenantId}/domains/${domainId}/primary`,
+    );
+
+    yield put(makeDomainPrimarySuccess());
+    yield put(fetchTenants());
+  } catch (e) {
+    yield put(makeDomainPrimaryFailure(errMsg(e)));
+  }
+}
 
 export function* tenantsSaga() {
   yield takeLatest(fetchTenants.type, fetchSaga);
   yield takeEvery(saveRequest.type, saveSaga);
+  yield takeEvery(makeDomainPrimary.type, makeDomainPrimarySaga);
 }
