@@ -156,14 +156,14 @@ function* makeDomainPrimarySaga(a: ReturnType<typeof makeDomainPrimary>) {
   const { tenantId, domainId } = a.payload;
 
   try {
-    yield call(
-      api.post,
-      `/platform/tenants/${tenantId}/domains/${domainId}/primary`,
+    const response: { data: unknown } = yield call(() =>
+      api.post(`/platform/tenants/${tenantId}/domains/${domainId}/primary`),
     );
 
     yield put(makeDomainPrimarySuccess());
     yield put(fetchTenants());
   } catch (e) {
+    console.error("[makeDomainPrimarySaga]", e);
     yield put(makeDomainPrimaryFailure(errMsg(e)));
   }
 }

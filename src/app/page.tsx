@@ -209,24 +209,10 @@ export default function TenantsPage() {
         ? token.colorWarning
         : token.colorTextSecondary;
 
-  const confirmPrimary = (t: Tenant, domain: DomainDto) => {
-    Modal.confirm({
-      title: "Birincil domain değiştirilsin mi?",
-      content: `Diğer adresler artık ${domain.host} adresine yönlenecek. Bu domain birincil adres olarak ayarlansın mı?`,
-      okText: "Birincil yap",
-      cancelText: "Vazgeç",
-      centered: true,
-      onOk: () => {
-        setPendingDomainId(domain.id);
-        dispatch(
-          makeDomainPrimary({
-            tenantId: t.id,
-            domainId: domain.id,
-          }),
-        );
-      },
-    });
-  };
+  const [confirmDomain, setConfirmDomain] = useState<{
+    tenant: Tenant;
+    domain: DomainDto;
+  } | null>(null);
 
   /**
    * Tek domain satırı: solda adres (uzunsa kesilir), sağda durum ve işlem.
@@ -291,9 +277,9 @@ export default function TenantsPage() {
         {domain.verified && !domain.primary && (
           <Button
             size="small"
-            disabled={primarySaving}
-            loading={primarySaving && pendingDomainId === domain.id}
-            onClick={() => confirmPrimary(t, domain)}
+            onClick={() => {
+              setConfirmDomain({ tenant: t, domain });
+            }}
           >
             Birincil yap
           </Button>
@@ -657,6 +643,30 @@ export default function TenantsPage() {
           onClose={() => setModal(null)}
         />
       )}
+      <Modal
+        open={!!confirmDomain}
+        title="Birincil domain değiştirilsin mi?"
+        onCancel={() => setConfirmDomain(null)}
+        onOk={() => {
+          console.log("[MODAL] ON OK ÇALIŞTI");
+
+          if (!confirmDomain) return;
+
+          dispatch(
+            makeDomainPrimary({
+              tenantId: confirmDomain.tenant.id,
+              domainId: confirmDomain.domain.id,
+            }),
+          );
+
+          setConfirmDomain(null);
+        }}
+        okText="Birincil yap"
+        cancelText="Vazgeç"
+        centered
+      >
+        {confirmDomain?.domain.host} birincil adres olarak ayarlansın mı?
+      </Modal>
     </>
   );
 }
