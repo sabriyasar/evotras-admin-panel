@@ -1,5 +1,11 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { call, put, takeEvery, takeLatest } from "redux-saga/effects";
+import {
+  call,
+  put,
+  takeEvery,
+  takeLeading,
+  takeLatest,
+} from "redux-saga/effects";
 import { api, errMsg } from "@/lib/api";
 
 export type LicenseStatus = "TRIAL" | "ACTIVE" | "SUSPENDED" | "EXPIRED";
@@ -92,17 +98,14 @@ const slice = createSlice({
       s.primarySaving = true;
       s.primaryError = undefined;
     },
-
     makeDomainPrimarySuccess: (s) => {
       s.primarySaving = false;
       s.primarySaved += 1;
     },
-
     makeDomainPrimaryFailure: (s, a: PayloadAction<string>) => {
       s.primarySaving = false;
       s.primaryError = a.payload;
     },
-
     clearPrimaryError: (s) => {
       s.primaryError = undefined;
     },
@@ -152,11 +155,12 @@ function* saveSaga(a: ReturnType<typeof saveRequest>) {
     yield put(saveFailure(errMsg(e)));
   }
 }
+
 function* makeDomainPrimarySaga(a: ReturnType<typeof makeDomainPrimary>) {
   const { tenantId, domainId } = a.payload;
 
   try {
-    const response: { data: unknown } = yield call(() =>
+    yield call(() =>
       api.post(`/platform/tenants/${tenantId}/domains/${domainId}/primary`),
     );
 
@@ -170,6 +174,6 @@ function* makeDomainPrimarySaga(a: ReturnType<typeof makeDomainPrimary>) {
 
 export function* tenantsSaga() {
   yield takeLatest(fetchTenants.type, fetchSaga);
-  yield takeEvery(saveRequest.type, saveSaga);
+  yield takeLeading(saveRequest.type, saveSaga);
   yield takeEvery(makeDomainPrimary.type, makeDomainPrimarySaga);
 }

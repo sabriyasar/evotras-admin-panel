@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -14,7 +15,12 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
-import { fetchTenants, saveRequest, Tenant, DomainDto } from "@/store/tenantsSlice";
+import {
+  fetchTenants,
+  saveRequest,
+  Tenant,
+  DomainDto,
+} from "@/store/tenantsSlice";
 import { api, errMsg } from "@/lib/api";
 
 const PLANS = [
@@ -22,12 +28,14 @@ const PLANS = [
   { value: "STANDARD", label: "Standart" },
   { value: "PRO", label: "Pro" },
 ];
+
 export const STATUS_LABEL = {
   TRIAL: "Deneme",
   ACTIVE: "Aktif",
   SUSPENDED: "Askıda",
   EXPIRED: "Süresi doldu",
 } as const;
+
 const date = (v: dayjs.Dayjs) => v.format("YYYY-MM-DD");
 
 function Base({
@@ -42,6 +50,7 @@ function Base({
   children: React.ReactNode;
 }) {
   const { saving, saveError } = useAppSelector((s) => s.tenants);
+
   return (
     <Modal
       open
@@ -49,6 +58,8 @@ function Base({
       onCancel={onClose}
       onOk={onOk}
       confirmLoading={saving}
+      okButtonProps={{ disabled: saving }}
+      cancelButtonProps={{ disabled: saving }}
       okText="Kaydet"
       cancelText="Vazgeç"
       maskClosable={false}
@@ -61,6 +72,7 @@ function Base({
           style={{ marginBottom: 16 }}
         />
       )}
+
       {children}
     </Modal>
   );
@@ -69,21 +81,20 @@ function Base({
 export function CreateTenantModal({ onClose }: { onClose: () => void }) {
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
+
   return (
     <Base
       title="Yeni mağaza ve lisans"
       onClose={onClose}
       onOk={() =>
-        form
-          .validateFields()
-          .then((v) =>
-            dispatch(
-              saveRequest({
-                kind: "create",
-                body: { ...v, expiresAt: date(v.expiresAt) },
-              }),
-            ),
-          )
+        form.validateFields().then((v) =>
+          dispatch(
+            saveRequest({
+              kind: "create",
+              body: { ...v, expiresAt: date(v.expiresAt) },
+            }),
+          ),
+        )
       }
     >
       <Form
@@ -99,6 +110,7 @@ export function CreateTenantModal({ onClose }: { onClose: () => void }) {
         <Form.Item name="name" label="Mağaza adı" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
+
         <Form.Item
           name="slug"
           label="Mağaza adresi"
@@ -113,6 +125,7 @@ export function CreateTenantModal({ onClose }: { onClose: () => void }) {
         >
           <Input addonAfter=".evotras.com" />
         </Form.Item>
+
         <Form.Item
           name="ownerName"
           label="Mağaza sahibi"
@@ -120,6 +133,7 @@ export function CreateTenantModal({ onClose }: { onClose: () => void }) {
         >
           <Input />
         </Form.Item>
+
         <Form.Item
           name="ownerEmail"
           label="Sahip e-postası"
@@ -127,6 +141,7 @@ export function CreateTenantModal({ onClose }: { onClose: () => void }) {
         >
           <Input />
         </Form.Item>
+
         <Form.Item
           name="ownerPassword"
           label="Geçici şifre"
@@ -134,9 +149,11 @@ export function CreateTenantModal({ onClose }: { onClose: () => void }) {
         >
           <Input.Password />
         </Form.Item>
+
         <Form.Item name="plan" label="Plan">
           <Select options={PLANS} />
         </Form.Item>
+
         <Form.Item
           name="expiresAt"
           label="Lisans bitiş tarihi"
@@ -144,9 +161,11 @@ export function CreateTenantModal({ onClose }: { onClose: () => void }) {
         >
           <DatePicker style={{ width: "100%" }} />
         </Form.Item>
+
         <Form.Item name="maxProducts" label="Ürün limiti">
           <InputNumber min={1} style={{ width: "100%" }} />
         </Form.Item>
+
         <Form.Item name="maxUsers" label="Kullanıcı limiti">
           <InputNumber min={1} style={{ width: "100%" }} />
         </Form.Item>
@@ -164,22 +183,21 @@ export function LicenseModal({
 }) {
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
+
   return (
     <Base
       title={`Lisans — ${tenant.name}`}
       onClose={onClose}
       onOk={() =>
-        form
-          .validateFields()
-          .then((v) =>
-            dispatch(
-              saveRequest({
-                kind: "license",
-                id: tenant.id,
-                body: { ...v, expiresAt: date(v.expiresAt) },
-              }),
-            ),
-          )
+        form.validateFields().then((v) =>
+          dispatch(
+            saveRequest({
+              kind: "license",
+              id: tenant.id,
+              body: { ...v, expiresAt: date(v.expiresAt) },
+            }),
+          ),
+        )
       }
     >
       <Form
@@ -198,6 +216,7 @@ export function LicenseModal({
         <Form.Item name="plan" label="Plan">
           <Select options={PLANS} />
         </Form.Item>
+
         <Form.Item name="status" label="Durum">
           <Select
             options={Object.entries(STATUS_LABEL).map(([value, label]) => ({
@@ -206,6 +225,7 @@ export function LicenseModal({
             }))}
           />
         </Form.Item>
+
         <Form.Item
           name="expiresAt"
           label="Bitiş tarihi"
@@ -213,6 +233,7 @@ export function LicenseModal({
         >
           <DatePicker style={{ width: "100%" }} />
         </Form.Item>
+
         <Form.Item
           name="maxProducts"
           label="Ürün limiti"
@@ -220,6 +241,7 @@ export function LicenseModal({
         >
           <InputNumber min={1} style={{ width: "100%" }} />
         </Form.Item>
+
         <Form.Item
           name="maxUsers"
           label="Kullanıcı limiti"
@@ -241,6 +263,7 @@ export function DomainModal({
 }) {
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
+
   return (
     <Base
       title={`Domain ekle — ${tenant.name}`}
@@ -276,6 +299,7 @@ export function UserModal({
 }) {
   const dispatch = useAppDispatch();
   const [form] = Form.useForm();
+
   return (
     <Base
       title={`Kullanıcı ekle — ${tenant.name}`}
@@ -300,6 +324,7 @@ export function UserModal({
         >
           <Input />
         </Form.Item>
+
         <Form.Item
           name="email"
           label="E-posta"
@@ -307,6 +332,7 @@ export function UserModal({
         >
           <Input />
         </Form.Item>
+
         <Form.Item
           name="password"
           label="Geçici şifre"
@@ -314,6 +340,7 @@ export function UserModal({
         >
           <Input.Password />
         </Form.Item>
+
         <Form.Item name="role" label="Rol">
           <Select
             options={[
@@ -326,7 +353,6 @@ export function UserModal({
     </Base>
   );
 }
-
 
 interface DomainVerificationInfo {
   host: string;
@@ -407,9 +433,7 @@ export function DomainVerificationModal({
 
       if (response.data.verified) {
         setInfo((current) =>
-          current
-            ? { ...current, verified: true }
-            : current,
+          current ? { ...current, verified: true } : current,
         );
 
         dispatch(fetchTenants());
@@ -488,23 +512,21 @@ export function DomainVerificationModal({
               <div>
                 <Typography.Text strong>Kayıt türü</Typography.Text>
                 <div>
-                  <Typography.Text copyable>
-                    {info.recordType}
-                  </Typography.Text>
+                  <Typography.Text copyable>{info.recordType}</Typography.Text>
                 </div>
               </div>
 
               <div>
                 <Typography.Text strong>Kayıt adı (Host)</Typography.Text>
                 <div>
-                  <Typography.Text copyable>
-                    {info.recordName}
-                  </Typography.Text>
+                  <Typography.Text copyable>{info.recordName}</Typography.Text>
                 </div>
               </div>
 
               <div>
-                <Typography.Text strong>Kayıt değeri (TXT Value)</Typography.Text>
+                <Typography.Text strong>
+                  Kayıt değeri (TXT Value)
+                </Typography.Text>
                 <div>
                   {info.recordValue ? (
                     <Typography.Text copyable>
